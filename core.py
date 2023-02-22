@@ -1,15 +1,27 @@
+from __future__ import annotations
 import json
 import os
 import time
+from typing import Iterator
 from config import Config
 
+
 ONEMONTH = 2592000
+
 
 def time_to_string(t: float) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
 
+
 class Client:
-    def __init__(self, name: str, id: str, start_date: float, duration: float = ONEMONTH, level: int = 1) -> None:
+    def __init__(
+        self,
+        name: str,
+        id: str,
+        start_date: float,
+        duration: float = ONEMONTH,
+        level: int = 1,
+    ) -> None:
         self.name = name
         self.id = id
         self.level = level
@@ -21,37 +33,25 @@ class Client:
     def __str__(self) -> str:
         return f"Client(name={self.name}, id={self.id}, start_date={time_to_string(self.start_date)}, end_date={time_to_string(self.end_date)})"
 
-    def update_expiration(self) -> None:
+    def update_expiration(self) -> Client:
         self.is_expired = time.time() > self.end_date
+        return self
 
-    def extend(self, duration: float = ONEMONTH) -> None:
+    def extend(self, duration: float = ONEMONTH) -> Client:
         self.start_date += duration
         self.end_date = self.start_date + self.duration
         self.is_expired = time.time() > self.end_date
+        return self
 
     def encode(self) -> dict[str, str | float]:
-        return {
-            "name": self.name,
-            "id": self.id,
-            "level": self.level,
-            "start_date": self.start_date,
-            "duration": self.duration,
-            "end_date": self.end_date,
-            "is_expired": self.is_expired
-        }
+        return self.__dict__
+
 
 class ClientManager:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._path = self._config.path()
         self._clients: dict[str, Client] = {}
-        self._v2ray_clients: list[str] = []
-
-    def load_v2ray(self, path: str) -> None:
-        with open(path, "r") as f:
-            data = json.load(f)
-        for client in data["inbounds"][0]["settings"]["clients"]:
-            self._v2ray_clients.append(client["id"])
 
     def load(self) -> None:
         if not os.path.exists(self._path):
@@ -63,10 +63,86 @@ class ClientManager:
 
     def save(self) -> None:
         with open(os.path.join(self._path, "clients.json"), "w") as f:
-            json.dump(self._clients,default=lambda o: o.encode(), indent=4, sort_keys=True, fp=f)
+            json.dump(
+                self._clients,
+                default=lambda o: o.encode(),
+                indent=4,
+                sort_keys=True,
+                fp=f,
+            )
 
     def get(self, key: str) -> Client | None:
         return self._clients.get(key)
 
     def set(self, key: str, value: Client) -> None:
         self._clients[key] = value
+
+
+class V2rayList:
+    def __init__(self, path: str = "./config.json") -> None:
+        self._path = path
+        self._clients: list[Client] = []
+
+        self.verify_path()
+        self.load()
+
+    def verify_path(self) -> None:
+        if not os.path.exists(self._path):
+            raise FileNotFoundError("config.json not found")
+
+    def load(self) -> V2rayList:
+        self._clients.clear()
+        with open(self._path, "r") as f:
+            data = json.load(f)
+        for client in data["inbounds"][0]["settings"]["clients"]:
+            self._clients.append(client["id"])
+        return self
+
+    def add(self, client: Client) -> V2rayList:
+        if client.id not in self._clients:
+            self._clients.append(client)
+            with open(self._path, "rw") as f:
+                data = json.load(f)
+                data["inbounds"][0]["settings"]["clients"].append(
+                    {"id": client.id, "level": client.level, "alterId": 0}
+                )
+                json.dump(data, f, indent=4)
+        return self
+
+    def expire(self, client: Client) -> V2rayList:
+        if not client.update_expiration().is_expired:
+            raise ValueError("Client is not expired")
+        if client.id in self._clients:
+            self._clients.remove(client)
+            with open(self._path, "rw") as f:
+                data = json.load(f)
+                for i, c in enumerate(data["inbounds"][0]["settings"]["clients"]):
+                    if c["id"] == client.id:
+                        del data["inbounds"][0]["settings"]["clients"][i]
+                        break
+                json.dump(data, f, indent=4)
+        return self
+
+    def __iter__(self) -> Iterator[Client]:
+        return iter(self._clients)
+
+    def __len__(self) -> int:
+        return len(self._clients)
+
+    def __getitem__(self, key: int) -> Client:
+        return self._clients[key]
+
+    def __setitem__(self, key: int, value: Client) -> None:
+        self._clients[key] = value
+
+    def __delitem__(self, key: int) -> None:
+        del self._clients[key]
+
+    def __contains__(self, item: Client | str) -> bool:
+        if isinstance(item, Client):
+            return item in self._clients
+        else:
+            for client in self._clients:
+                if client.id == item:
+                    return True
+            return False
