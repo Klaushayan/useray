@@ -43,6 +43,16 @@ class Client:
         self.is_expired = time.time() > self.end_date
         return self
 
+    def stop(self) -> Client:
+        self.end_date = time.time() - 1
+        self.update_expiration()
+        return self
+
+    def resume(self) -> Client:
+        self.end_date = self.start_date + self.duration
+        self.update_expiration()
+        return self
+
     def encode(self) -> dict[str, str | float]:
         return self.__dict__
 
@@ -52,6 +62,7 @@ class ClientManager:
         self._config = config
         self._path = self._config.path()
         self._clients: dict[str, Client] = {}
+        self._v2ray_list = V2rayList(self._path).verify_path().load()
 
     def load(self) -> None:
         if not os.path.exists(self._path):
@@ -70,6 +81,26 @@ class ClientManager:
                 sort_keys=True,
                 fp=f,
             )
+    def add_client(self, client: Client) -> None:
+        self._clients[client.id] = client
+        self._v2ray_list.add(client)
+        self.save()
+
+    def extend_client(self, client: Client) -> None:
+        self._clients[client.id].extend()
+        self.save()
+
+    def stop_client(self, client: Client) -> None:
+        self._clients[client.id].stop()
+        self._v2ray_list.expire(client)
+        self.save()
+
+    def _sync(self) -> None:
+        for client in self._clients.values():
+            client.update_expiration()
+            if client.is_expired:
+                self._v2ray_list.expire(client)
+        self.save()
 
     def get(self, key: str) -> Client | None:
         return self._clients.get(key)
@@ -86,9 +117,10 @@ class V2rayList:
         self.verify_path()
         self.load()
 
-    def verify_path(self) -> None:
+    def verify_path(self) -> V2rayList:
         if not os.path.exists(self._path):
             raise FileNotFoundError("config.json not found")
+        return self
 
     def load(self) -> V2rayList:
         self._clients.clear()
