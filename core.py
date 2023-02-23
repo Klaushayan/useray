@@ -12,6 +12,12 @@ ONEMONTH = 2592000
 def time_to_string(t: float) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
 
+def json_to_client(data: dict) -> dict[str, Client]:
+    # remove end_date and is_expired
+    for key, value in data.items():
+        value.pop("end_date", None)
+        value.pop("is_expired", None)
+    return {key: Client(**value) for key, value in data.items()}
 
 class Client:
     def __init__(
@@ -80,7 +86,7 @@ class ClientManager:
         if not os.path.exists(os.path.join(self._path, "clients.json")):
             self.save()
         with open(os.path.join(self._path, "clients.json"), "r") as f:
-            self._clients = json.load(f)
+            self._clients = json_to_client(json.load(f))
 
     def save(self) -> None:
         with open(os.path.join(self._path, "clients.json"), "w") as f:
