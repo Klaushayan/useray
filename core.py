@@ -33,6 +33,15 @@ class Client:
     def __str__(self) -> str:
         return f"Client(name={self.name}, id={self.id}, start_date={time_to_string(self.start_date)}, end_date={time_to_string(self.end_date)})"
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, other: Client) -> bool:
+        return self.id == other.id
+
+    def __iter__(self) -> Iterator[Client]:
+        yield self
+
     def update_expiration(self) -> Client:
         self.is_expired = time.time() > self.end_date
         return self
@@ -58,11 +67,12 @@ class Client:
 
 
 class ClientManager:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, v2ray_path: str) -> None:
         self._config = config
         self._path = self._config.path()
         self._clients: dict[str, Client] = {}
-        self._v2ray_list = V2rayList(self._path).verify_path().load()
+        self._v2ray_list = V2rayList(v2ray_path).verify_path().load()
+        self._sync()
 
     def load(self) -> None:
         if not os.path.exists(self._path):
@@ -96,6 +106,12 @@ class ClientManager:
         self.save()
 
     def _sync(self) -> None:
+        for client in self._v2ray_list:
+            if client not in self._clients:
+                if type(client) is str:
+                    self._clients[client] = Client("No name", client, time.time(), ONEMONTH)
+                else:
+                    self._clients[client.id] = client
         for client in self._clients.values():
             client.update_expiration()
             if client.is_expired:
@@ -112,7 +128,7 @@ class ClientManager:
 class V2rayList:
     def __init__(self, path: str = "./config.json") -> None:
         self._path = path
-        self._clients: list[Client] = []
+        self._clients: list[Client] = [] # this is usually str, TODO: fix the type hinting later
 
         self.verify_path()
         self.load()
