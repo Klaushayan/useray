@@ -6,7 +6,11 @@ from typing import Iterator
 from config import Config
 
 
-ONEMONTH = 2592000
+class DURATION:
+    ONE_DAY = 86400
+    ONE_WEEK = 604800
+    ONE_MONTH = 2592000
+    THREE_MONTHS = 7776000
 
 
 def time_to_string(t: float) -> str:
@@ -25,7 +29,7 @@ class Client:
         name: str,
         id: str,
         start_date: float,
-        duration: float = ONEMONTH,
+        duration: float = DURATION.ONE_MONTH,
         level: int = 1,
     ) -> None:
         self.name = name
@@ -52,7 +56,7 @@ class Client:
         self.is_expired = time.time() > self.end_date
         return self
 
-    def extend(self, duration: float = ONEMONTH) -> Client:
+    def extend(self, duration: float = DURATION.ONE_MONTH) -> Client:
         self.start_date += duration
         self.end_date = self.start_date + self.duration
         self.is_expired = time.time() > self.end_date
@@ -115,7 +119,7 @@ class ClientManager:
         for client in self._v2ray_list:
             if client not in self._clients:
                 if type(client) is str:
-                    self._clients[client] = Client("No name", client, time.time(), ONEMONTH)
+                    self._clients[client] = Client("No name", client, time.time(), DURATION.ONE_MONTH)
                 else:
                     self._clients[client.id] = client
         for client in self._clients.values():
