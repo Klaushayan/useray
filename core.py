@@ -97,6 +97,7 @@ class ClientManager:
         self._path = self._config.path()
         self._clients: dict[str, Client] = {}
         self._v2ray_list = V2rayList(v2ray_path).verify_path().load()
+        self.load()
         self._sync()
 
     def load(self) -> None:
@@ -128,6 +129,10 @@ class ClientManager:
     def stop_client(self, client: Client) -> None:
         self._clients[client.id].stop()
         self._v2ray_list.expire(client)
+        self.save()
+
+    def update_client(self, client: Client) -> None:
+        self._clients[client.id] = client
         self.save()
 
     def _sync(self) -> None:
