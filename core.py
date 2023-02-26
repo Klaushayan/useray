@@ -23,12 +23,24 @@ def json_to_client(data: dict) -> dict[str, Client]:
         value.pop("is_expired", None)
     return {key: Client(**value) for key, value in data.items()}
 
+def generate_uuid() -> str:
+    import uuid
+    return str(uuid.uuid1())
+
+def validate_uuid(uuid: str) -> bool:
+    import re
+    return bool(re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", uuid, re.I))
+
+def parse_date(date: str) -> float:
+    import datetime
+    return datetime.datetime.strptime(date, "%Y-%m-%d").timestamp()
+
 class Client:
     def __init__(
         self,
         name: str,
         id: str,
-        start_date: float,
+        start_date: float = time.time(),
         duration: float = DURATION.ONE_MONTH,
         level: int = 1,
     ) -> None:
@@ -74,6 +86,9 @@ class Client:
 
     def encode(self) -> dict[str, str | float]:
         return self.__dict__
+
+    def preview(self) -> str:
+        return f"{self.id} ({self.name})"
 
 
 class ClientManager:
