@@ -120,6 +120,7 @@ class ClientManager:
     def add_client(self, client: Client) -> None:
         self._clients[client.id] = client
         self._v2ray_list.add(client)
+        print(f"Adding {client.name} with UUID {client.id}...")
         self.save()
 
     def extend_client(self, client: Client) -> None:
@@ -179,8 +180,9 @@ class V2rayList:
     def add(self, client: Client) -> V2rayList:
         if client.id not in self._clients:
             self._clients.append(client)
-            with open(self._path, "rw") as f:
+            with open(self._path, "r") as f:
                 data = json.load(f)
+            with open(self._path, "w") as f:
                 data["inbounds"][0]["settings"]["clients"].append(
                     {"id": client.id, "level": client.level, "alterId": 0}
                 )
