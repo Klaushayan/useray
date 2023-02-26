@@ -89,7 +89,7 @@ def edit_menu(manager: core.ClientManager, client: core.Client):
             menu(manager)
         case _:
             print("Invalid choice.")
-    manager.save()
+    manager.update_client(client)
 
 def add_menu(manager: core.ClientManager):
     chosen = chooser_list("Add client", "Add client with custom UUID", "Back")
