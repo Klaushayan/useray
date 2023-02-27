@@ -91,9 +91,24 @@ class Client:
     def encode(self) -> dict[str, str | float]:
         return self.__dict__
 
+    def days_left(self) -> int:
+        return int((self.end_date - time.time()) / DURATION.ONE_DAY)
+
     def preview(self) -> str:
         return f"{self.id} ({self.name})"
 
+    # show client info with human readable format, expiring date, duration, days left etc.
+    def show(self) -> str:
+        return f"""Client Info:
+    Name: {self.name}
+    ID: {self.id}
+    Level: {self.level}
+    Start Date: {time_to_string(self.start_date)}
+    End Date: {time_to_string(self.end_date)}
+    Duration: {time_to_string(self.duration)}
+    Days Left: {self.days_left()}
+    Expired: {self.is_expired}
+    """
 
 class ClientManager:
     def __init__(self, config: Config, v2ray_path: str) -> None:

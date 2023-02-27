@@ -41,6 +41,7 @@ class EditMenu(str, enum.Enum):
     CHANGE_STARTDATE = "Change start date"
     EXTEND = "Extend"
     EXPIRE = "Expire"
+    SHOW_INFO = "Show info"
     BACK = "Back"
 
 class UtilityMenu(str, enum.Enum):
@@ -91,11 +92,14 @@ def edit_menu(manager: core.ClientManager, client: core.Client):
         case EditMenu.EXPIRE.value:
             if confirm("Are you sure you want to expire this client?"):
                 manager.stop_client(client)
+        case EditMenu.SHOW_INFO.value:
+            print(client.show())
         case EditMenu.BACK.value:
             menu(manager)
         case _:
             print("Invalid choice.")
     manager.update_client(client)
+    menu(manager)
 
 def add_menu(manager: core.ClientManager):
     chosen = chooser_list("Add client", "Add client with custom UUID", "Back")
