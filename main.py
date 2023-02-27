@@ -32,6 +32,7 @@ class Menu(str, enum.Enum):
     LIST_CLIENTS = "List clients"
     ADD_CLIENT = "Add client"
     REMOVE_CLIENT = "Remove client"
+    UTILS = "Utilities"
     QUIT = "Quit"
 
 class EditMenu(str, enum.Enum):
@@ -40,6 +41,10 @@ class EditMenu(str, enum.Enum):
     CHANGE_STARTDATE = "Change start date"
     EXTEND = "Extend"
     EXPIRE = "Expire"
+    BACK = "Back"
+
+class UtilityMenu(str, enum.Enum):
+    LIST_EXPIRED = "List expired clients"
     BACK = "Back"
 
 def input(placeholder: str, prompt = "> ") -> str:
@@ -114,6 +119,19 @@ def add_menu(manager: core.ClientManager):
         case "Back":
             menu(manager)
 
+def utils_menu(manager: core.ClientManager):
+    chosen = chooser_list(*[item.value for item in UtilityMenu]).strip()
+    match chosen:
+        case UtilityMenu.LIST_EXPIRED.value:
+            expired = manager.list_expired()
+            if expired:
+                chooser_list(*[client.preview() for client in expired])
+            else:
+                print("No expired clients.")
+        case UtilityMenu.BACK.value:
+            menu(manager)
+    menu(manager)
+
 def menu(manager: core.ClientManager):
     chosen = chooser_list(*[item.value for item in Menu]).strip()
     match chosen:
@@ -130,6 +148,8 @@ def menu(manager: core.ClientManager):
                 manager.stop_client(selected)
             else:
                 menu(manager)
+        case Menu.UTILS.value:
+            utils_menu(manager)
         case Menu.QUIT.value:
             exit(0)
         case _:
