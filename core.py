@@ -143,6 +143,12 @@ class ClientManager:
     def list_expired(self) -> list[Client]:
         return [client for client in self._clients.values() if client.update_expiration().is_expired]
 
+    def clear_expired(self) -> None:
+        for client in self.list_expired():
+            self._v2ray_list.expire(client)
+            del self._clients[client.id]
+        self.save()
+
     def _sync(self) -> None:
         for client in self._v2ray_list:
             if client not in self._clients:

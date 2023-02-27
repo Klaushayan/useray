@@ -45,6 +45,7 @@ class EditMenu(str, enum.Enum):
 
 class UtilityMenu(str, enum.Enum):
     LIST_EXPIRED = "List expired clients"
+    CLEAR_EXPIRED = "Clear expired clients"
     BACK = "Back"
 
 def input(placeholder: str, prompt = "> ") -> str:
@@ -128,6 +129,10 @@ def utils_menu(manager: core.ClientManager):
                 chooser_list(*[client.preview() for client in expired])
             else:
                 print("No expired clients.")
+        case UtilityMenu.CLEAR_EXPIRED.value:
+            if confirm("Are you sure you want to clear all expired clients?"):
+                print(f"Removed {len(manager.list_expired())} expired clients.")
+                manager.clear_expired()
         case UtilityMenu.BACK.value:
             menu(manager)
     menu(manager)
