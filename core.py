@@ -97,7 +97,6 @@ class Client:
     def preview(self) -> str:
         return f"{self.id} ({self.name})"
 
-    # show client info with human readable format, expiring date, duration, days left etc.
     def show(self) -> str:
         return f"""Client Info:
     Name: {self.name}
