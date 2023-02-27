@@ -17,11 +17,15 @@ def time_to_string(t: float) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
 
 def json_to_client(data: dict) -> dict[str, Client]:
-    # remove end_date and is_expired
     for key, value in data.items():
-        value.pop("end_date", None)
-        value.pop("is_expired", None)
-    return {key: Client(**value) for key, value in data.items()}
+        end_date = value.pop("end_date", None)
+        is_expired = value.pop("is_expired", None)
+        data[key] = Client(**value)
+        if end_date is not None:
+            data[key].end_date = end_date
+        if is_expired is not None:
+            data[key].is_expired = is_expired
+    return data
 
 def generate_uuid() -> str:
     import uuid
@@ -136,13 +140,13 @@ class ClientManager:
         self._clients[client.id] = client
         self.save()
 
+    def list_expired(self) -> list[Client]:
+        return [client for client in self._clients.values() if client.update_expiration().is_expired]
+
     def _sync(self) -> None:
         for client in self._v2ray_list:
             if client not in self._clients:
-                if type(client) is str:
-                    self._clients[client] = Client("No name", client, time.time(), DURATION.ONE_MONTH)
-                else:
-                    self._clients[client.id] = client
+                self._clients[client] = Client("No name", client, time.time(), DURATION.ONE_MONTH)
         for client in self._clients.values():
             client.update_expiration()
             if client.is_expired:
@@ -159,7 +163,7 @@ class ClientManager:
 class V2rayList:
     def __init__(self, path: str = "./config.json") -> None:
         self._path = path
-        self._clients: list[Client] = [] # this is usually str, TODO: fix the type hinting later
+        self._clients: list[str] = [] # this is usually str, TODO: fix the type hinting later
 
         self.verify_path()
         self.load()
@@ -179,7 +183,7 @@ class V2rayList:
 
     def add(self, client: Client) -> V2rayList:
         if client.id not in self._clients:
-            self._clients.append(client)
+            self._clients.append(client.id)
             with open(self._path, "r") as f:
                 data = json.load(f)
             with open(self._path, "w") as f:
@@ -193,9 +197,10 @@ class V2rayList:
         if not client.update_expiration().is_expired:
             raise ValueError("Client is not expired")
         if client.id in self._clients:
-            self._clients.remove(client)
-            with open(self._path, "rw") as f:
+            self._clients.remove(client.id)
+            with open(self._path, "r") as f:
                 data = json.load(f)
+            with open(self._path, "w") as f:
                 for i, c in enumerate(data["inbounds"][0]["settings"]["clients"]):
                     if c["id"] == client.id:
                         del data["inbounds"][0]["settings"]["clients"][i]
@@ -203,26 +208,20 @@ class V2rayList:
                 json.dump(data, f, indent=4)
         return self
 
-    def __iter__(self) -> Iterator[Client]:
+    def __iter__(self) -> Iterator[str]:
         return iter(self._clients)
 
     def __len__(self) -> int:
         return len(self._clients)
 
-    def __getitem__(self, key: int) -> Client:
+    def __getitem__(self, key: int) -> str:
         return self._clients[key]
 
     def __setitem__(self, key: int, value: Client) -> None:
-        self._clients[key] = value
+        self._clients[key] = value.id
 
     def __delitem__(self, key: int) -> None:
         del self._clients[key]
 
-    def __contains__(self, item: Client | str) -> bool:
-        if isinstance(item, Client):
-            return item in self._clients
-        else:
-            for client in self._clients:
-                if client.id == item:
-                    return True
-            return False
+    def __contains__(self, item: str) -> bool:
+        return item in self._clients
