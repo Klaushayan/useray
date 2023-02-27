@@ -73,7 +73,7 @@ class Client:
         return self
 
     def extend(self, duration: float = DURATION.ONE_MONTH) -> Client:
-        self.start_date += duration
+        self.duration += duration
         self.end_date = self.start_date + self.duration
         self.is_expired = time.time() > self.end_date
         return self
@@ -105,7 +105,7 @@ class Client:
     Level: {self.level}
     Start Date: {time_to_string(self.start_date)}
     End Date: {time_to_string(self.end_date)}
-    Duration: {time_to_string(self.duration)}
+    Duration: {self.duration / DURATION.ONE_DAY} Days
     Days Left: {self.days_left()}
     Expired: {self.is_expired}
     """
