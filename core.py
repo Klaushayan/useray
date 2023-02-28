@@ -78,6 +78,11 @@ class Client:
         self.is_expired = time.time() > self.end_date
         return self
 
+    def update_end_date(self) -> Client:
+        self.end_date = self.start_date + self.duration
+        self.update_expiration()
+        return self
+
     def stop(self) -> Client:
         self.end_date = time.time() - 1
         self.update_expiration()
@@ -161,6 +166,11 @@ class ClientManager:
         for client in self.list_expired():
             self._v2ray_list.expire(client)
             del self._clients[client.id]
+        self.save()
+
+    def recalculate_end_dates(self) -> None:
+        for client in self._clients.values():
+            client.end_date = client.start_date + client.duration
         self.save()
 
     def _sync(self) -> None:

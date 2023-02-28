@@ -48,6 +48,7 @@ class EditMenu(str, enum.Enum):
 class UtilityMenu(str, enum.Enum):
     LIST_EXPIRED = "List expired clients"
     CLEAR_EXPIRED = "Clear expired clients"
+    RECALCULATE_ENDDATES = "Recalculate end dates"
     BACK = "Back"
 
 def input(placeholder: str, prompt = "> ") -> str:
@@ -138,6 +139,9 @@ def utils_menu(manager: core.ClientManager):
             if confirm("Are you sure you want to clear all expired clients?"):
                 print(f"Removed {len(manager.list_expired())} expired clients.")
                 manager.clear_expired()
+        case UtilityMenu.RECALCULATE_ENDDATES.value:
+            if confirm("Are you sure you want to recalculate all end dates?"):
+                manager.recalculate_end_dates()
         case UtilityMenu.BACK.value:
             menu(manager)
     menu(manager)
