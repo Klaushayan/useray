@@ -3,6 +3,7 @@ import json
 import subprocess
 import click
 import core
+from sys import exit
 
 
 @click.command()
