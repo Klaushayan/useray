@@ -99,6 +99,12 @@ class Client:
     def days_left(self) -> int:
         return int((self.end_date - time.time()) / DURATION.ONE_DAY)
 
+    def add_duration(self, duration: int) -> Client:
+        duration = duration * DURATION.ONE_DAY
+        self.duration += duration
+        self.update_end_date()
+        return self
+
     def preview(self) -> str:
         return f"{self.id} ({self.name})"
 

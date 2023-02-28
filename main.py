@@ -40,6 +40,7 @@ class EditMenu(str, enum.Enum):
     ASSIGN_NAME = "Assign name"
     CHANGE_LEVEL = "Change level"
     CHANGE_STARTDATE = "Change start date"
+    ADD_DURATION = "Add/sub duration (by days)"
     EXTEND = "Extend"
     EXPIRE = "Expire"
     SHOW_INFO = "Show info"
@@ -89,6 +90,9 @@ def edit_menu(manager: core.ClientManager, client: core.Client):
         case EditMenu.CHANGE_STARTDATE.value:
             start_date = input("Enter the start date of the client...")
             client.start_date = core.parse_date(start_date)
+        case EditMenu.ADD_DURATION.value:
+            duration = input("Enter the duration of the client by days...")
+            client.add_duration(int(duration))
         case EditMenu.EXTEND.value:
             client.extend(duration_menu())
         case EditMenu.EXPIRE.value:
